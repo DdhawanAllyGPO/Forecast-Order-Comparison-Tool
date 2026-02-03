@@ -1,24 +1,37 @@
+import os
 import streamlit as st
 import pandas as pd
 # --------------------------
 # 1. Initialize DB connections
 # --------------------------
 from azure_sql import DatabaseConnection  # replace with actual module
+from dotenv import load_dotenv
+load_dotenv()  # Load variables from .env
+
+# Get DB connection details from environment variables
+integ_server = os.getenv("INTEG_DB_SERVER")
+integ_database = os.getenv("INTEG_DB_NAME")
+integ_driver = os.getenv("INTEG_DB_DRIVER")
+local_run = os.getenv("LOCAL_RUN", "LOCAL")  # default to LOCAL if not set
+
+order_server = os.getenv("ORDER_DB_SERVER")
+order_database = os.getenv("ORDER_DB_NAME")
+order_driver = os.getenv("ORDER_DB_DRIVER")
 
 # Forecast / Site info DB
 integ_db = DatabaseConnection(
-    server="sql-ago-aiq-prd-use.database.windows.net",
-    database="sqldb-integration-management-prd",
-    driver="{ODBC Driver 17 for SQL Server}",
-    localRun='LOCAL'
+    server=integ_server,
+    database=integ_database,
+    driver=integ_driver,
+    localRun=local_run
 )
 
 # Order / Purchase DB
 order_db = DatabaseConnection(
-    server="sql-ago-aiq-prd-use.database.windows.net",
-    database="sqldb-order-management-prd",
-    driver="{ODBC Driver 17 for SQL Server}",
-    localRun='LOCAL'
+    server=order_server,
+    database=order_database,
+    driver=order_driver,
+    localRun=local_run
 )
 
 # Make the page layout wide to use more horizontal space
