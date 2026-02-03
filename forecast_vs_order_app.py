@@ -9,29 +9,45 @@ from dotenv import load_dotenv
 load_dotenv()  # Load variables from .env
 
 # Get DB connection details from environment variables
-integ_server = os.getenv("INTEG_DB_SERVER")
-integ_database = os.getenv("INTEG_DB_NAME")
-integ_driver = os.getenv("INTEG_DB_DRIVER")
-local_run = os.getenv("LOCAL_RUN", "LOCAL")  # default to LOCAL if not set
+# integ_server = os.getenv("INTEG_DB_SERVER")
+# integ_database = os.getenv("INTEG_DB_NAME")
+# integ_driver = os.getenv("INTEG_DB_DRIVER")
+# local_run = os.getenv("LOCAL_RUN", "LOCAL")  # default to LOCAL if not set
 
-order_server = os.getenv("ORDER_DB_SERVER")
-order_database = os.getenv("ORDER_DB_NAME")
-order_driver = os.getenv("ORDER_DB_DRIVER")
+# order_server = os.getenv("ORDER_DB_SERVER")
+# order_database = os.getenv("ORDER_DB_NAME")
+# order_driver = os.getenv("ORDER_DB_DRIVER")
+
+# Forecast / Site info DB
+# integ_db = DatabaseConnection(
+#     server=integ_server,
+#     database=integ_database,
+#     driver=integ_driver,
+#     localRun=local_run
+# )
+
+# # Order / Purchase DB
+# order_db = DatabaseConnection(
+#     server=order_server,
+#     database=order_database,
+#     driver=order_driver,
+#     localRun=local_run
+# )
 
 # Forecast / Site info DB
 integ_db = DatabaseConnection(
-    server=integ_server,
-    database=integ_database,
-    driver=integ_driver,
-    localRun=local_run
+    server="sql-ago-aiq-prd-use.database.windows.net",
+    database="sqldb-integration-management-prd",
+    driver="{ODBC Driver 17 for SQL Server}",
+    localRun='LOCAL'
 )
 
 # Order / Purchase DB
 order_db = DatabaseConnection(
-    server=order_server,
-    database=order_database,
-    driver=order_driver,
-    localRun=local_run
+    server="sql-ago-aiq-prd-use.database.windows.net",
+    database="sqldb-order-management-prd",
+    driver="{ODBC Driver 17 for SQL Server}",
+    localRun='LOCAL'
 )
 
 # Make the page layout wide to use more horizontal space
@@ -97,7 +113,7 @@ forecast_df = integ_db.read_sql(forecast_query)
 # Rename for comparison
 forecast_df = forecast_df.rename(columns={"OrderQty": "ForecastedOrderQty"})
 
-st.subheader("Forecasted Orders (Yesterday)")
+st.subheader("Forecasted Orders (Today's Forecast from Yesterday)")
 st.dataframe(forecast_df, width=1500)
 
 # --------------------------
@@ -111,8 +127,8 @@ WHERE IsLatest = 1
         SELECT id
         FROM dbo.PurchaseOrders
         WHERE SiteId = {site_id}
-          AND CreatedDate >= CAST(GETDATE() - 1 AS date)
-          AND CreatedDate < CAST(GETDATE() AS date)
+          AND CreatedDate >= CAST(GETDATE() AS date)
+          AND CreatedDate < DATEADD(day, 1, CAST(GETDATE() AS date))
   )
 """
 status_df = order_db.read_sql(status_query)
@@ -131,8 +147,8 @@ WHERE PurchaseOrderId IN (
     SELECT id
     FROM dbo.PurchaseOrders
     WHERE SiteId = {site_id}
-      AND CreatedDate >= CAST(GETDATE() - 1 AS date)
-      AND CreatedDate < CAST(GETDATE() AS date)
+        AND CreatedDate >= CAST(GETDATE() AS date)
+        AND CreatedDate < DATEADD(day, 1, CAST(GETDATE() AS date))
 )
 """
 orders_df = order_db.read_sql(orders_query)
@@ -140,7 +156,7 @@ orders_df = order_db.read_sql(orders_query)
 # Rename quantity column for comparison
 orders_df = orders_df.rename(columns={"Quantity": "OrderedQty"})
 
-st.subheader("Actual Orders (Yesterday)")
+st.subheader("Actual Orders (Today's Orders)")
 st.dataframe(orders_df, width=1500)
 
 # --------------------------
